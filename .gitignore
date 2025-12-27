@@ -19,3 +19,13 @@ mlflow.db
 # OS
 .DS_Store
 Thumbs.db
+# datasets / outputs
+data/
+artifacts/
+mlruns/
+mlflow.db
+
+# python
+.venv/
+__pycache__/
+*.pyc
