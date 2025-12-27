@@ -1,0 +1,47 @@
+# ===============================
+# Core ML / Deep Learning
+# ===============================
+torch
+torchvision
+torchaudio
+pytorch-lightning
+timm
+
+# ===============================
+# Data & Images
+# ===============================
+pillow
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+
+# ===============================
+# MLOps / Experiments
+# ===============================
+mlflow
+dvc
+
+# ===============================
+# API / Serving
+# ===============================
+fastapi
+uvicorn[standard]
+python-multipart
+
+# ===============================
+# UI
+# ===============================
+streamlit
+
+# ===============================
+# Monitoring / Drift (future-ready)
+# ===============================
+evidently
+
+# ===============================
+# Notebooks
+# ===============================
+notebook
+ipykernel

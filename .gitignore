@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# ML / MLOps
+mlruns/
+artifacts/
+models/
+lightning_logs/
+mlflow.db
+
+# Env
+.env
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+.venv/
+data/
+notebooks/
+lightning_logs/
+mlruns/
+mlflow.db
+__pycache__/
+*.pyc
+.git/
+.vscode/
