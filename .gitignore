@@ -3,12 +3,15 @@
 __pycache__/
 *.pyc
 
-# ML / MLOps
+# Data & ML artifacts (NEVER commit)
+data/
 mlruns/
 artifacts/
 models/
 lightning_logs/
 mlflow.db
+*.pt
+*.pth
 
 # Env
 .env
