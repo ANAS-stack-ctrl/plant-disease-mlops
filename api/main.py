@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from PIL import Image
 from prometheus_fastapi_instrumentator import Instrumentator
-
 import torch
 import torch.nn as nn
 from torchvision import transforms, models
@@ -12,7 +11,7 @@ from collections import OrderedDict
 
 app = FastAPI(title="Plant Disease Detection API")
 
-# ✅ Prometheus metrics at /metrics
+# ✅ Prometheus metrics endpoint
 Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 MODEL_PATH = os.path.join("models", "best_cnn_model.pt")
@@ -35,7 +34,7 @@ def load_class_names():
         if os.path.isdir(os.path.join(CLASSES_DIR, d))
     ])
     if not classes:
-        raise RuntimeError("Aucune classe trouvée dans le dossier train")
+        raise RuntimeError("Aucune classe trouvée")
     return classes
 
 CLASS_NAMES = load_class_names()
@@ -55,11 +54,12 @@ def build_model(num_classes: int) -> nn.Module:
 
 def load_model() -> nn.Module:
     if not os.path.exists(MODEL_PATH):
-        raise RuntimeError(f"Model file not found видно: {MODEL_PATH}")
+        raise RuntimeError(f"Model file not found: {MODEL_PATH}")
 
     model = build_model(NUM_CLASSES)
     state = torch.load(MODEL_PATH, map_location="cpu")
 
+    # handle Lightning prefix "model."
     if isinstance(state, dict) and any(k.startswith("model.") for k in state.keys()):
         state = OrderedDict((k.replace("model.", "", 1), v) for k, v in state.items())
 
@@ -83,6 +83,7 @@ async def predict(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Format non supporté (jpg/png uniquement)")
 
     image_bytes = await file.read()
+
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     except Exception:
