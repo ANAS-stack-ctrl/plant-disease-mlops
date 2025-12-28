@@ -9,22 +9,28 @@ import os
 import json
 from collections import OrderedDict
 
+# =====================
+# App FastAPI
+# =====================
 app = FastAPI(title="Plant Disease Detection API")
+
+# ✅ Prometheus instrumentation
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
-
-# ===== Paths =====
+# =====================
+# Paths
+# =====================
 MODEL_PATH = os.path.join("models", "best_cnn_model.pt")
-
-# Option 1 (recommandé): lire classes depuis un fichier généré par training
 CLASSES_JSON = os.path.join("artifacts", "classes.json")
+CLASSES_DIR = os.path.join(
+    "data", "raw", "PlantVillageDataset", "train_val_test", "train"
+)
 
-# Option 2 (fallback): lire classes depuis le dossier train
-CLASSES_DIR = os.path.join("data", "raw", "PlantVillageDataset", "train_val_test", "train")
-
-
+# =====================
+# Utils
+# =====================
 def load_class_names():
-    # ✅ Priorité: classes.json (plus stable)
+    # priorité : classes.json
     if os.path.exists(CLASSES_JSON):
         with open(CLASSES_JSON, "r", encoding="utf-8") as f:
             classes = json.load(f)
@@ -32,7 +38,7 @@ def load_class_names():
             raise RuntimeError("classes.json invalide")
         return classes
 
-    # ✅ Fallback: dossier train
+    # fallback : dossier train
     if not os.path.isdir(CLASSES_DIR):
         raise RuntimeError(f"Dossier classes introuvable: {CLASSES_DIR}")
 
@@ -41,60 +47,57 @@ def load_class_names():
         if os.path.isdir(os.path.join(CLASSES_DIR, d))
     ])
     if len(classes) == 0:
-        raise RuntimeError("Aucune classe trouvée dans le dossier train")
+        raise RuntimeError("Aucune classe trouvée")
     return classes
 
 
 CLASS_NAMES = load_class_names()
 NUM_CLASSES = len(CLASS_NAMES)
 
-# ✅ même preprocessing que training
+# =====================
+# Preprocessing
+# =====================
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225]),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    ),
 ])
 
+# =====================
+# Model
+# =====================
+def build_model(num_classes: int) -> nn.Module:
+    model = models.resnet18(weights=None)
+    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    return model
 
-def build_model(num_classes: int) -> torch.nn.Module:
-    # weights=None car on recharge nos poids
-    m = models.resnet18(weights=None)
-    m.fc = nn.Linear(m.fc.in_features, num_classes)
-    return m
 
-
-def load_model() -> torch.nn.Module:
+def load_model() -> nn.Module:
     if not os.path.exists(MODEL_PATH):
         raise RuntimeError(f"Model file not found: {MODEL_PATH}")
 
     model = build_model(NUM_CLASSES)
     state = torch.load(MODEL_PATH, map_location="cpu")
 
-    # ✅ Corrige le cas où le state_dict vient d'un LightningModule (préfixe "model.")
+    # correction Lightning "model."
     if isinstance(state, dict) and any(k.startswith("model.") for k in state.keys()):
-        new_state = OrderedDict((k.replace("model.", "", 1), v) for k, v in state.items())
-        state = new_state
-
-    # Charge les poids
-    missing, unexpected = model.load_state_dict(state, strict=False)
-
-    # Si ça reste incohérent, on fail clairement
-    if len(missing) > 0 and len(unexpected) > 0:
-        raise RuntimeError(
-            "State dict incompatible.\n"
-            f"Missing keys (extrait): {missing[:5]}\n"
-            f"Unexpected keys (extrait): {unexpected[:5]}"
+        state = OrderedDict(
+            (k.replace("model.", "", 1), v) for k, v in state.items()
         )
 
+    model.load_state_dict(state, strict=False)
     model.eval()
     return model
 
 
-# ✅ charge au démarrage
 model = load_model()
 
-
+# =====================
+# Routes
+# =====================
 @app.get("/")
 def root():
     return {"status": "ok", "num_classes": NUM_CLASSES}
@@ -111,24 +114,23 @@ def health():
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    # sécurité: types acceptés
     if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
-        raise HTTPException(status_code=400, detail="Format non supporté (jpg/png uniquement)")
+        raise HTTPException(status_code=400, detail="Format non supporté")
 
     image_bytes = await file.read()
 
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     except Exception:
-        raise HTTPException(status_code=400, detail="Image invalide ou corrompue")
+        raise HTTPException(status_code=400, detail="Image invalide")
 
-    x = transform(img).unsqueeze(0)  # (1,3,224,224)
+    x = transform(img).unsqueeze(0)
 
     with torch.no_grad():
         logits = model(x)
         probs = torch.softmax(logits, dim=1)[0]
-        pred_idx = int(torch.argmax(probs).item())
-        confidence = float(probs[pred_idx].item())
+        pred_idx = int(torch.argmax(probs))
+        confidence = float(probs[pred_idx])
 
     return {
         "predicted_class": CLASS_NAMES[pred_idx],
