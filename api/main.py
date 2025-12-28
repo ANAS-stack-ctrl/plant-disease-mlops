@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from PIL import Image
+from prometheus_fastapi_instrumentator import Instrumentator
 import torch
 import torch.nn as nn
 from torchvision import transforms, models
@@ -9,6 +10,8 @@ import json
 from collections import OrderedDict
 
 app = FastAPI(title="Plant Disease Detection API")
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
 
 # ===== Paths =====
 MODEL_PATH = os.path.join("models", "best_cnn_model.pt")

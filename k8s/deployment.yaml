@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plant-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: plant-api
+  template:
+    metadata:
+      labels:
+        app: plant-api
+    spec:
+      containers:
+        - name: plant-api
+          image: ghcr.io/anas-stack-ctrl/plant-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
