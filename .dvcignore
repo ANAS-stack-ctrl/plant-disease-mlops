@@ -1,32 +1,20 @@
-# Environnements Python
-.venv/
-__pycache__/
+.git
+.vscode
+.idea
+notebooks
+__pycache__
 *.pyc
 
-# Git
-.git/
-.gitignore
-
-# IDE
-.vscode/
-.idea/
-
-# Notebooks
-notebooks/
-
-# Logs & outputs
-lightning_logs/
-mlruns/
+mlruns
+artifacts
+models
+lightning_logs
 mlflow.db
 
-# Docker
 Dockerfile
 .dockerignore
+k8s
+charts
 
-# Kubernetes / Helm
-k8s/
-charts/
-
-# OS
 .DS_Store
 Thumbs.db
