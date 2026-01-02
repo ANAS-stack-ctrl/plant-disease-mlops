@@ -1,0 +1,32 @@
+# Environnements Python
+.venv/
+__pycache__/
+*.pyc
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Notebooks
+notebooks/
+
+# Logs & outputs
+lightning_logs/
+mlruns/
+mlflow.db
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Kubernetes / Helm
+k8s/
+charts/
+
+# OS
+.DS_Store
+Thumbs.db
